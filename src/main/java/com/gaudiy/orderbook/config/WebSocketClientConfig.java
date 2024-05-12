@@ -15,7 +15,6 @@ public class WebSocketClientConfig {
 
     @Bean
     public WebSocketClient webSocketClient() {
-        System.out.println(binanceServerUri);
         return new OrderWebSocketClient(URI.create(binanceServerUri));
     }
 }

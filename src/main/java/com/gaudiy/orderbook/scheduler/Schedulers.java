@@ -51,12 +51,11 @@ public class Schedulers {
             Gson gson = new Gson();
             Snapshot latestSnapshot = gson.fromJson(response.body(), Snapshot.class);
 
-            var filteredList = recordList
-                    .stream()
-                    .filter(record -> record.getFinalUpdateId() < latestSnapshot.getLastUpdateId())
-                    .collect(Collectors.toSet());
+            storage.resetPriceLevels();
+            recordList.forEach(recordService::parseRecordPrices);
+            orderBookService.printOrderBook();
 
-            filteredList.forEach(recordService::parseRecordPrices);
+            storage.cleanRecordList(latestSnapshot.getLastUpdateId());
 
         } catch (IOException e) {
             System.out.println(e.getMessage());

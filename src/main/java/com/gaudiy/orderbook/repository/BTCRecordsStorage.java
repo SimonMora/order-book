@@ -8,13 +8,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public final class BTCRecordsStorage {
 
     private static BTCRecordsStorage INSTANCE;
-    private final Set<Record> recordList;
-    private final Map<String, String> bidsMap;
-    private final Map<String, String> asksMap;
+    private Set<Record> recordList;
+    private Map<String, String> bidsMap;
+    private Map<String, String> asksMap;
 
 
     private BTCRecordsStorage() {
@@ -92,19 +93,24 @@ public final class BTCRecordsStorage {
         return asksMap.get(askPrice) != null;
     }
 
-    public void printAskMap() {
-        System.out.println(asksMap);
-    }
-
-    public void printBidMap() {
-        System.out.println("Printing Map:");
-        System.out.println(bidsMap);
-    }
 
     public void storeReceivedRecord(Record newRecord) {
         if (newRecord != null) {
             recordList.add(newRecord);
         }
+    }
+
+    public void cleanRecordList(Long lastUpdateId) {
+        this.recordList = recordList
+                .stream()
+                .filter(record -> record.getFinalUpdateId() > lastUpdateId)
+                .collect(Collectors.toSet());
+    }
+
+    public void resetPriceLevels() {
+        System.out.println("Cleaning price levels");
+        bidsMap = new LinkedHashMap<>();
+        asksMap = new LinkedHashMap<>();
     }
 
     public Set<Record> getRecordList() {

@@ -21,18 +21,26 @@ public class OrderBookServiceImpl implements OrderBookService {
             bidsList.add("\u001B[32mBuy");
             asksList.add("\u001B[31mSell");
 
-            bids.keySet().forEach(key -> {
-                final StringBuilder sb = new StringBuilder("\u001B[32m");
-                sb.append(String.format("%-10.16s  %-10.16s", key, bids.get(key)));
-                sb.append("\u001B[0m");
-                bidsList.add(sb.toString());
-            });
-            asks.keySet().forEach(key -> {
-                final StringBuilder sb = new StringBuilder("\u001B[31m");
-                sb.append(String.format("%-10.16s  %-10.16s", key, asks.get(key)));
-                sb.append("\u001B[0m");
-                asksList.add(sb.toString());
-            });
+            bids
+                    .keySet()
+                    .stream()
+                    .sorted()
+                    .forEach(key -> {
+                        final StringBuilder sb = new StringBuilder("\u001B[32m");
+                        sb.append(String.format("%-10.16s  %-10.16s", key, bids.get(key)));
+                        sb.append("\u001B[0m");
+                        bidsList.add(sb.toString());
+                    });
+            asks
+                    .keySet()
+                    .stream()
+                    .sorted()
+                    .forEach(key -> {
+                        final StringBuilder sb = new StringBuilder("\u001B[31m");
+                        sb.append(String.format("%-10.16s  %-10.16s", key, asks.get(key)));
+                        sb.append("\u001B[0m");
+                        asksList.add(sb.toString());
+                    });
 
             if (bidsList.size() > asksList.size()) {
                 while (bidsList.size() > asksList.size())
