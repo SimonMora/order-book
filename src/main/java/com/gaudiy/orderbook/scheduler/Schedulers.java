@@ -10,8 +10,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.net.URI;
@@ -22,7 +20,6 @@ import java.util.stream.Collectors;
 
 @Configuration
 @EnableScheduling
-//@RestController
 public class Schedulers {
 
     @Autowired
@@ -34,10 +31,7 @@ public class Schedulers {
     @Value("${binance.depth.snapshot.uri}")
     private String depthSnapshotUri;
 
-    private HttpClient httpClient;
-
     @Scheduled(fixedDelay = 10000)
-    //@GetMapping(path = "/scheduler")
     public void scheduledBTCOrderBook() {
         System.out.println("Start scheduler for BTC order book printing");
         final var storage = BTCRecordsStorage.getInstance();

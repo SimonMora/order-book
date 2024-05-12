@@ -1,6 +1,5 @@
 package com.gaudiy.orderbook.service.impl;
 
-import com.gaudiy.orderbook.entity.Record;
 import com.gaudiy.orderbook.repository.BTCRecordsStorage;
 import com.gaudiy.orderbook.service.OrderBookService;
 import org.springframework.stereotype.Service;

@@ -33,13 +33,13 @@ public class RecordServiceImpl implements RecordService {
         //System.out.println("number of bids: " + record.getBids().size());
         //System.out.println("number of asks: " + record.getAsks().size());
 
-        record.getBids().stream().forEach(this::evaluateBidProcessing);
-        record.getAsks().stream().forEach(this::evaluateAskProcessing);
+        record.getBids().forEach(this::evaluateBidProcessing);
+        record.getAsks().forEach(this::evaluateAskProcessing);
     }
 
     private void evaluateBidProcessing(List<String> bid) {
         final BTCRecordsStorage storage = BTCRecordsStorage.getInstance();
-        //System.out.println(bid);
+
         if(bid != null && !storage.isBidStored(bid.get(0))) {
             storage.addNewBids(bid);
         } else {

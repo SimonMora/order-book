@@ -33,8 +33,8 @@ public final class BTCRecordsStorage {
 
     public void addNewBids(List<String> bid) {
         try {
-            final Double price = Double.valueOf(bid.get(0));
-            final Double level = Double.valueOf(bid.get(1));
+            final double price = Double.parseDouble(bid.get(0));
+            final double level = Double.parseDouble(bid.get(1));
 
             if (level > 0 && bidsMap.size() < 50) {
                 bidsMap.put(bid.get(0), bid.get(1));
@@ -45,8 +45,8 @@ public final class BTCRecordsStorage {
     }
 
     public String updateBid(String bidPrice, String bid) {
-        final BigDecimal price = BigDecimal.valueOf(Double.valueOf(bidPrice));
-        final Double level = Double.valueOf(bid);
+        final BigDecimal price = BigDecimal.valueOf(Double.parseDouble(bidPrice));
+        final Double level = Double.parseDouble(bid);
 
         if (level == 0) {
             bidsMap.remove(bidPrice);
@@ -63,8 +63,8 @@ public final class BTCRecordsStorage {
 
     public void addNewAsks(List<String> ask) {
         try {
-           final BigDecimal price = BigDecimal.valueOf(Double.valueOf(ask.get(0)));
-           final Double level = Double.valueOf(ask.get(1));
+           final BigDecimal price = BigDecimal.valueOf(Double.parseDouble(ask.get(0)));
+           final Double level = Double.parseDouble(ask.get(1));
 
             if (level > 0 && asksMap.size() < 50) {
                 asksMap.put(ask.get(0), ask.get(1));
