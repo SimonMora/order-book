@@ -5,6 +5,7 @@ import com.gaudiy.orderbook.repository.BTCRecordsStorage;
 import com.gaudiy.orderbook.service.OrderBookService;
 import com.gaudiy.orderbook.service.RecordService;
 import com.google.gson.Gson;
+import org.java_websocket.client.WebSocketClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
@@ -26,6 +27,9 @@ public class Schedulers {
     private RecordService recordService;
 
     @Autowired
+    private WebSocketClient webSocketClient;
+
+    @Autowired
     private OrderBookService orderBookService;
 
     @Value("${binance.depth.snapshot.uri}")
@@ -33,6 +37,11 @@ public class Schedulers {
 
     @Scheduled(fixedDelay = 10000)
     public void scheduledBTCOrderBook() {
+
+        if (!webSocketClient.isOpen()) {
+            webSocketClient.connect();
+        }
+
         System.out.println("Start scheduler for BTC order book printing");
         final var storage = BTCRecordsStorage.getInstance();
         final var recordList = storage.getRecordList();
@@ -51,19 +60,24 @@ public class Schedulers {
             Gson gson = new Gson();
             Snapshot latestSnapshot = gson.fromJson(response.body(), Snapshot.class);
 
-            storage.resetPriceLevels();
-            recordList.forEach(recordService::parseRecordPrices);
+            long start = System.currentTimeMillis();
+
+            storage.saveOrderBookAndResetPriceLevels();
+            recordList
+                    .forEach(recordService::parseRecordPrices);
+
             orderBookService.printOrderBook();
 
             storage.cleanRecordList(latestSnapshot.getLastUpdateId());
 
+            long finish = System.currentTimeMillis();
+            System.out.println("Elapsed time: " + (finish -start));
         } catch (IOException e) {
             System.out.println(e.getMessage());
         } catch (InterruptedException e) {
             System.out.println(e.getMessage());
         }
 
-        orderBookService.printOrderBook();
     }
 
     @Scheduled(fixedDelay = 10000)

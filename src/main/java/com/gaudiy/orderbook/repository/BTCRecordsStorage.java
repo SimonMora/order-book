@@ -1,5 +1,6 @@
 package com.gaudiy.orderbook.repository;
 
+import com.gaudiy.orderbook.entity.OrderBook;
 import com.gaudiy.orderbook.entity.Record;
 
 import java.math.BigDecimal;
@@ -7,21 +8,27 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Collectors;
 
 public final class BTCRecordsStorage {
 
     private static BTCRecordsStorage INSTANCE;
     private Set<Record> recordList;
+    private Queue<OrderBook> orderBooks;
     private Map<String, String> bidsMap;
     private Map<String, String> asksMap;
 
 
     private BTCRecordsStorage() {
-        bidsMap = new LinkedHashMap<>();
-        asksMap = new LinkedHashMap<>();
+        bidsMap = new ConcurrentHashMap<>();
+        asksMap = new ConcurrentHashMap<>();
         recordList = new HashSet<>();
+        orderBooks = new ConcurrentLinkedQueue<>();
     }
 
     public static BTCRecordsStorage getInstance() {
@@ -107,10 +114,12 @@ public final class BTCRecordsStorage {
                 .collect(Collectors.toSet());
     }
 
-    public void resetPriceLevels() {
+    public void saveOrderBookAndResetPriceLevels() {
         System.out.println("Cleaning price levels");
-        bidsMap = new LinkedHashMap<>();
-        asksMap = new LinkedHashMap<>();
+        orderBooks.add(new OrderBook(this.bidsMap, this.asksMap));
+
+        bidsMap = new ConcurrentHashMap<>();
+        asksMap = new ConcurrentHashMap<>();
     }
 
     public Set<Record> getRecordList() {
@@ -123,5 +132,9 @@ public final class BTCRecordsStorage {
 
     public Map<String, String> getBidsMap() {
         return bidsMap;
+    }
+
+    public Queue<OrderBook> getOrderBooks() {
+        return orderBooks;
     }
 }
