@@ -9,4 +9,5 @@ public interface RecordService {
 
     void parseRecordPrices(Record record);
 
+    void orderUpdate(Long lastUpdateId);
 }

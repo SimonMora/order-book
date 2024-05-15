@@ -5,14 +5,12 @@ import com.gaudiy.orderbook.entity.Record;
 
 import java.math.BigDecimal;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Collectors;
 
 public final class BTCRecordsStorage {
@@ -114,12 +112,28 @@ public final class BTCRecordsStorage {
                 .collect(Collectors.toSet());
     }
 
-    public void saveOrderBookAndResetPriceLevels() {
-        System.out.println("Cleaning price levels");
-        orderBooks.add(new OrderBook(this.bidsMap, this.asksMap));
+    public String saveOrderBookAndResetPriceLevels(Long lastUpdateId) {
+        orderBooks.add(
+                new OrderBook(
+                        this.bidsMap,
+                        this.asksMap,
+                        lastUpdateId,
+                        orderBooks.size() > 0 ? orderBooks.peek().getLastUpdateId() : 0
+                )
+        );
 
         bidsMap = new ConcurrentHashMap<>();
         asksMap = new ConcurrentHashMap<>();
+
+        cleanRecordList(lastUpdateId);
+        return lastUpdateId.toString();
+    }
+
+    public void restoreStorage() {
+        bidsMap = new ConcurrentHashMap<>();
+        asksMap = new ConcurrentHashMap<>();
+        recordList = new HashSet<>();
+        orderBooks = new ConcurrentLinkedQueue<>();
     }
 
     public Set<Record> getRecordList() {
@@ -137,4 +151,5 @@ public final class BTCRecordsStorage {
     public Queue<OrderBook> getOrderBooks() {
         return orderBooks;
     }
+
 }

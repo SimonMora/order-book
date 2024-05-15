@@ -6,13 +6,17 @@ import java.util.Map;
 
 public class OrderBook implements Serializable {
 
+    private Long lastUpdateId;
+    private Long initialUpdateId;
     private BigDecimal totalVolume;
     private Map<String, String> bids;
     private Map<String, String>  asks;
 
-    public OrderBook(Map<String, String>  bids, Map<String, String>  asks) {
+    public OrderBook(Map<String, String>  bids, Map<String, String>  asks, Long lastUpdateId, Long initialUpdateId) {
         this.bids = bids;
         this.asks = asks;
+        this.lastUpdateId = lastUpdateId;
+        this.initialUpdateId = initialUpdateId;
 
         var bidsTotal = bids
                 .keySet()
@@ -59,5 +63,21 @@ public class OrderBook implements Serializable {
 
     public void setAsks(Map<String, String> asks) {
         this.asks = asks;
+    }
+
+    public Long getLastUpdateId() {
+        return lastUpdateId;
+    }
+
+    public void setLastUpdateId(Long lastUpdateId) {
+        this.lastUpdateId = lastUpdateId;
+    }
+
+    public Long getInitialUpdateId() {
+        return initialUpdateId;
+    }
+
+    public void setInitialUpdateId(Long initialUpdateId) {
+        this.initialUpdateId = initialUpdateId;
     }
 }
