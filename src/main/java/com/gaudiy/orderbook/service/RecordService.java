@@ -9,5 +9,5 @@ public interface RecordService {
 
     void parseRecordPrices(Record record);
 
-    void orderUpdate(Long lastUpdateId);
+    void orderUpdate(Long lastUpdateId, String currency);
 }

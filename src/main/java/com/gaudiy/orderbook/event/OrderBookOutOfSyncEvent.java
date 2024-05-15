@@ -1,11 +1,9 @@
 package com.gaudiy.orderbook.event;
 
-public class OrderBookOutOfSyncEvent {
-    public OrderBookOutOfSyncEvent() {
-    }
+public record OrderBookOutOfSyncEvent(String errorCause) {
 
     @Override
     public String toString() {
-        return "OrderBookOutOfSyncEvent application error detected.";
+        return "OrderBookOutOfSyncEvent application error detected :: cause: " + this.errorCause;
     }
 }

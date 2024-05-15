@@ -6,6 +6,7 @@ import com.gaudiy.orderbook.event.OrderBookOutOfSyncEvent;
 import com.gaudiy.orderbook.repository.BTCRecordsStorage;
 import com.gaudiy.orderbook.service.OrderBookService;
 import com.gaudiy.orderbook.service.RecordService;
+import com.gaudiy.orderbook.utils.Utils;
 import com.google.gson.Gson;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,6 +35,9 @@ public class OrderBookServiceImpl implements OrderBookService, ApplicationEventP
 
     @Value("${binance.depth.snapshot.uri}")
     private String depthSnapshotUri;
+
+    @Value("${currency.process:BTC}")
+    private String currency;
 
     @Autowired
     private RecordService recordService;
@@ -118,18 +122,18 @@ public class OrderBookServiceImpl implements OrderBookService, ApplicationEventP
             }
         } catch (IllegalArgumentException e) {
             LOG.severe(e.getMessage());
-            publisher.publishEvent(new OrderBookOutOfSyncEvent());
+            publisher.publishEvent(new OrderBookOutOfSyncEvent(e.getMessage()));
             throw new RuntimeException(e);
         }
 
     }
 
     @Override
-    public void orderBookUpdate() {
+    public void orderBookUpdate(/*String currency*/) {
         try {
             HttpRequest request = HttpRequest
                     .newBuilder()
-                    .uri(URI.create(depthSnapshotUri))
+                    .uri(URI.create(Utils.buildBinanceUri(currency, depthSnapshotUri, false)))
                     .GET()
                     .build();
             HttpResponse<String> response = HttpClient
@@ -140,7 +144,7 @@ public class OrderBookServiceImpl implements OrderBookService, ApplicationEventP
             Gson gson = new Gson();
             Snapshot latestSnapshot = gson.fromJson(response.body(), Snapshot.class);
 
-            recordService.orderUpdate(latestSnapshot.getLastUpdateId());
+            recordService.orderUpdate(latestSnapshot.getLastUpdateId(), currency);
 
         } catch (IOException e) {
             throw new RuntimeException(e);

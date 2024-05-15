@@ -23,7 +23,7 @@ public class OrderBookEventListener {
     @EventListener
     void handleOrderBookUpdate(OrderBookUpdatedEvent event) {
         try {
-            final Long orderBookToProcess = event.getLastOrderBookId();
+            final Long orderBookToProcess = event.lastOrderBookId();
             storage.saveOrderBookAndResetPriceLevels(orderBookToProcess);
             orderBookService.printOrderBook(orderBookToProcess);
         } catch (Exception e) {

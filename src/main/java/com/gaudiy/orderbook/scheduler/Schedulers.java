@@ -1,8 +1,11 @@
 package com.gaudiy.orderbook.scheduler;
 
 import com.gaudiy.orderbook.service.OrderBookService;
+import com.gaudiy.orderbook.utils.Constants;
 import org.java_websocket.client.WebSocketClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -13,7 +16,15 @@ import org.springframework.scheduling.annotation.Scheduled;
 public class Schedulers {
 
     @Autowired
+    //@Qualifier("WebSocketClientBTC")
     private WebSocketClient webSocketClient;
+
+    /*@Autowired
+    @Qualifier("WebSocketClientBTC")
+    private WebSocketClient webSocketClientETH;*/
+
+    @Value("${currency.process:BTC}")
+    private String currency;
 
     @Autowired
     private OrderBookService orderBookService;
@@ -24,7 +35,16 @@ public class Schedulers {
             webSocketClient.connect();
         }
         System.out.println("Start scheduler for BTC order book printing");
-        orderBookService.orderBookUpdate();
+        orderBookService.orderBookUpdate(/*Constants.CURRENCY_BTC*/);
     }
+
+    /*@Scheduled(fixedDelay = 10000)
+    public void scheduledETHOrderBook() {
+        if (!webSocketClientETH.isOpen()) {
+            webSocketClientETH.connect();
+        }
+        System.out.println("Start scheduler for BTC order book printing");
+        orderBookService.orderBookUpdate(Constants.CURRENCY_ETH);
+    }*/
 
 }

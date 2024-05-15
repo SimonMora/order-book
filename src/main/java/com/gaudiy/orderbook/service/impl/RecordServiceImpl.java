@@ -59,7 +59,7 @@ public class RecordServiceImpl implements RecordService, ApplicationEventPublish
     }
 
     @Override
-    public void orderUpdate(Long lastUpdateId) {
+    public void orderUpdate(Long lastUpdateId, String currency) {
         final AtomicInteger counter = new AtomicInteger(0);
         final var records = storage.getRecordList();
         if (records.size() > 0) {
