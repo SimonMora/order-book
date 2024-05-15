@@ -2,6 +2,7 @@ package com.gaudiy.orderbook.entity;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.Map;
 
 public class OrderBook implements Serializable {
@@ -11,6 +12,14 @@ public class OrderBook implements Serializable {
     private BigDecimal totalVolume;
     private Map<String, String> bids;
     private Map<String, String>  asks;
+
+    public OrderBook() {
+        this.lastUpdateId = 0L;
+        this.initialUpdateId = 0L;
+        this.totalVolume = BigDecimal.ZERO;
+        this.bids = new HashMap<>();
+        this.asks = new HashMap<>();
+    }
 
     public OrderBook(Map<String, String>  bids, Map<String, String>  asks, Long lastUpdateId, Long initialUpdateId) {
         this.bids = bids;

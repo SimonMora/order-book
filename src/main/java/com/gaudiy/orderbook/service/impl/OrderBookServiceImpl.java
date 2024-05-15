@@ -43,9 +43,11 @@ public class OrderBookServiceImpl implements OrderBookService, ApplicationEventP
     private RecordService recordService;
 
     @Override
-    public void printOrderBook(Long orderBookId) throws IllegalArgumentException {
+    public void printOrderBook(Long orderBookId, String currency) throws IllegalArgumentException {
         try {
+            var storage = Utils.retrieveStorage(currency);
             final var orderBooks = storage.getOrderBooks();
+
             var orderBooksFiltered = orderBooks
                     .stream()
                     .filter(ob -> ob.getLastUpdateId().equals( orderBookId))
@@ -55,7 +57,7 @@ public class OrderBookServiceImpl implements OrderBookService, ApplicationEventP
                 throw new IllegalArgumentException("There are two orders with the same lastUpdateId..");
             }
 
-            final OrderBook orderToProcess = orderBooksFiltered.get(0);
+            final OrderBook orderToProcess = orderBooksFiltered.size() != 0 ? orderBooksFiltered.get(0) : new OrderBook();
             final var asks = orderToProcess.getAsks();
             final var bids = orderToProcess.getBids();
 
@@ -68,7 +70,7 @@ public class OrderBookServiceImpl implements OrderBookService, ApplicationEventP
                 if (orderBooks.size() > 1 && orderBooksFiltered.size() > 1) {
                     throw new IllegalArgumentException("There are two orders with the same initialUpdateId..");
                 }
-                final OrderBook orderToCompare = orderBooksFiltered.get(0);
+                final OrderBook orderToCompare = orderBooksFiltered.size() != 0 ? orderBooksFiltered.get(0) : new OrderBook();
 
                 List<String> bidsList = new ArrayList<>();
                 List<String> asksList = new ArrayList<>();
@@ -109,13 +111,15 @@ public class OrderBookServiceImpl implements OrderBookService, ApplicationEventP
                         bidsList.add("");
                 }
 
+                final StringBuilder sb = new StringBuilder();
                 for (int i = 0; i <= bids.size(); i++) {
-                    System.out.printf("%-30.32s    %-30.32s%n", bidsList.get(i), asksList.get(i));
+                    sb.append(String.format("%-30.32s    %-30.32s%n", bidsList.get(i), asksList.get(i)));
                 }
 
                 var volumeDiffer = orderToProcess.getTotalVolume().subtract(orderToCompare.getTotalVolume());
 
-                System.out.println("\u001B[33mTotal current volume variation: " + volumeDiffer);
+                sb.append(String.format("\u001B[33mTotal current volume variation: %s%n", volumeDiffer));
+                System.out.println(sb);
                 System.out.println("\u001B[0m");
             } else {
                 System.out.println("System is retrieving orders, please wait..");
@@ -129,7 +133,7 @@ public class OrderBookServiceImpl implements OrderBookService, ApplicationEventP
     }
 
     @Override
-    public void orderBookUpdate(/*String currency*/) {
+    public void orderBookUpdate(String currency) {
         try {
             HttpRequest request = HttpRequest
                     .newBuilder()

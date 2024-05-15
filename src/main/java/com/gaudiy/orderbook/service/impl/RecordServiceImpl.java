@@ -4,6 +4,7 @@ import com.gaudiy.orderbook.entity.Record;
 import com.gaudiy.orderbook.event.OrderBookUpdatedEvent;
 import com.gaudiy.orderbook.repository.BTCRecordsStorage;
 import com.gaudiy.orderbook.service.RecordService;
+import com.gaudiy.orderbook.utils.Utils;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import org.springframework.context.ApplicationEventPublisher;
@@ -27,9 +28,9 @@ public class RecordServiceImpl implements RecordService, ApplicationEventPublish
     private ApplicationEventPublisher publisher;
 
     @Override
-    public void manageNewRecordReceived(String object) {
+    public void manageNewRecordReceived(String object, String currency) {
         final Gson parser = new Gson();
-        
+        var storage = Utils.retrieveStorage(currency);
         try {
             final Record newRecord = parser.fromJson(object, Record.class);
             storage.storeReceivedRecord(newRecord);
@@ -41,18 +42,18 @@ public class RecordServiceImpl implements RecordService, ApplicationEventPublish
 
     @Override
     @Async
-    public void parseRecordPrices(Record record) {
+    public void parseRecordPrices(Record record, String currency) {
         try {
             record
                     .getBids()
                     .stream()
                     .parallel()
-                    .forEach(this::evaluateBidProcessing);
+                    .forEach(bid -> { this.evaluateBidProcessing(bid, currency); });
             record
                     .getAsks()
                     .stream()
                     .parallel()
-                    .forEach(this::evaluateAskProcessing);
+                    .forEach(ask -> { this.evaluateAskProcessing(ask, currency); });
         } catch (ConcurrentModificationException e) {
             throw new RuntimeException(e);
         }
@@ -61,15 +62,16 @@ public class RecordServiceImpl implements RecordService, ApplicationEventPublish
     @Override
     public void orderUpdate(Long lastUpdateId, String currency) {
         final AtomicInteger counter = new AtomicInteger(0);
-        final var records = storage.getRecordList();
+        var records = Utils.retrieveStorage(currency).getRecordList();
+
         if (records.size() > 0) {
             records.stream()
                     .parallel()
                     .forEach(record -> {
-                        parseRecordPrices(record);
+                        parseRecordPrices(record, currency);
                         counter.incrementAndGet();
                         if(records.size() == counter.get()) {
-                            publisher.publishEvent(new OrderBookUpdatedEvent(lastUpdateId));
+                            publisher.publishEvent(new OrderBookUpdatedEvent(lastUpdateId, currency));
                         }
                     });
         } else {
@@ -78,7 +80,8 @@ public class RecordServiceImpl implements RecordService, ApplicationEventPublish
     }
 
     @Async
-    private void evaluateBidProcessing(List<String> bid) {
+    private void evaluateBidProcessing(List<String> bid, String currency) {
+        var storage = Utils.retrieveStorage(currency);
         try {
             if(bid != null && !storage.isBidStored(bid.get(0))) {
                 storage.addNewBids(bid);
@@ -92,7 +95,8 @@ public class RecordServiceImpl implements RecordService, ApplicationEventPublish
     }
 
     @Async
-    private void evaluateAskProcessing(List<String> ask) {
+    private void evaluateAskProcessing(List<String> ask, String currency) {
+        var storage = Utils.retrieveStorage(currency);
         try {
             if(ask != null && !storage.isAskStored(ask.get(0))) {
                 storage.addNewAsks(ask);

@@ -14,8 +14,11 @@ public class OrderWebSocketClient extends WebSocketClient {
     @Autowired
     private RecordService recordService;
 
-    public OrderWebSocketClient(URI serverURI) {
+    private final String currency;
+
+    public OrderWebSocketClient(URI serverURI, String currency) {
         super(serverURI);
+        this.currency = currency;
     }
 
     @Override
@@ -31,7 +34,7 @@ public class OrderWebSocketClient extends WebSocketClient {
     @Override
     public void onMessage(String message) {
         try {
-            recordService.manageNewRecordReceived(message);
+            recordService.manageNewRecordReceived(message, currency);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
