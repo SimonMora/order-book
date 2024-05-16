@@ -14,8 +14,11 @@ public class OrderWebSocketClient extends WebSocketClient {
     @Autowired
     private RecordService recordService;
 
-    public OrderWebSocketClient(URI serverURI) {
+    private final String currency;
+
+    public OrderWebSocketClient(URI serverURI, String currency) {
         super(serverURI);
+        this.currency = currency;
     }
 
     @Override
@@ -25,21 +28,17 @@ public class OrderWebSocketClient extends WebSocketClient {
 
     @Override
     public void onClose(int code, String reason, boolean remote) {
-        System.out.println("closed with exit code " + code + " additional info: " + reason);
+        System.out.printf("Closed with exit code %s, additional info: %s%n", code, reason);
     }
 
     @Override
     public void onMessage(String message) {
-        try {
-            recordService.manageNewRecordReceived(message);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
+        recordService.manageNewRecordReceived(message, currency);
     }
 
     @Override
     public void onMessage(ByteBuffer message) {
-        System.out.println("received ByteBuffer");
+        System.out.printf("ByteBuffer received during connection : %s%n", message.toString());
     }
 
     @Override

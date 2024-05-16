@@ -1,6 +1,6 @@
 package com.gaudiy.orderbook.event;
 
-public record OrderBookOutOfSyncEvent(String errorCause) {
+public record OrderBookOutOfSyncEvent(String errorCause, String currency) {
 
     @Override
     public String toString() {

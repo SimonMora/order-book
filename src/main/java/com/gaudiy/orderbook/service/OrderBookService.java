@@ -2,8 +2,8 @@ package com.gaudiy.orderbook.service;
 
 public interface OrderBookService {
 
-    void printOrderBook(Long orderBookId) throws IllegalArgumentException;
+    void printOrderBook(Long orderBookId, String currency) throws IllegalArgumentException;
 
-    void orderBookUpdate();
+    void orderBookUpdate(String currency);
 
 }
