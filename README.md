@@ -15,6 +15,7 @@ to the above-mentioned JAVA_HOME env variable.
 # Clone the repository:
 
 `git clone https://github.com/SimonMora/order-book`
+
 `cd order-book`
 
 # Build the project using Gradle:
