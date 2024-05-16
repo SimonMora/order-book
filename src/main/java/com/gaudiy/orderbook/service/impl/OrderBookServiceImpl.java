@@ -1,17 +1,15 @@
 package com.gaudiy.orderbook.service.impl;
 
+import com.gaudiy.orderbook.commons.exception.OrderApplicationException;
+import com.gaudiy.orderbook.commons.utils.Constants;
 import com.gaudiy.orderbook.entity.OrderBook;
 import com.gaudiy.orderbook.entity.Snapshot;
-import com.gaudiy.orderbook.event.OrderBookOutOfSyncEvent;
-import com.gaudiy.orderbook.repository.BTCRecordsStorage;
 import com.gaudiy.orderbook.service.OrderBookService;
 import com.gaudiy.orderbook.service.RecordService;
-import com.gaudiy.orderbook.utils.Utils;
+import com.gaudiy.orderbook.commons.utils.Utils;
 import com.google.gson.Gson;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -25,13 +23,9 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 @Service
-public class OrderBookServiceImpl implements OrderBookService, ApplicationEventPublisherAware {
+public class OrderBookServiceImpl implements OrderBookService {
 
     private final Logger LOG = Logger.getLogger("OrderBookServiceImpl.class");
-
-    final BTCRecordsStorage storage = BTCRecordsStorage.getInstance();
-
-    private ApplicationEventPublisher publisher;
 
     @Value("${binance.depth.snapshot.uri}")
     private String depthSnapshotUri;
@@ -82,6 +76,7 @@ public class OrderBookServiceImpl implements OrderBookService, ApplicationEventP
                         .keySet()
                         .stream()
                         .sorted()
+                        .limit(50)
                         .map(key -> {
                             final StringBuilder sb = new StringBuilder("\u001B[32m");
                             sb.append(String.format("%-10.10s  %-10.10s", key, bids.get(key)));
@@ -94,6 +89,7 @@ public class OrderBookServiceImpl implements OrderBookService, ApplicationEventP
                         .keySet()
                         .stream()
                         .sorted()
+                        .limit(50)
                         .map(key -> {
                             final StringBuilder sb = new StringBuilder("\u001B[31m");
                             sb.append(String.format("%-10.10s  %-10.10s", key, asks.get(key)));
@@ -118,16 +114,25 @@ public class OrderBookServiceImpl implements OrderBookService, ApplicationEventP
 
                 var volumeDiffer = orderToProcess.getTotalVolume().subtract(orderToCompare.getTotalVolume());
 
-                sb.append(String.format("\u001B[33mTotal current volume variation: %s%n", volumeDiffer));
+                sb.append(
+                        String.format(
+                                "\u001B[33mTotal current %s volume variation: %s%n",
+                                (currency + Constants.USDT).toUpperCase(),
+                                volumeDiffer
+                        )
+                );
                 System.out.println(sb);
                 System.out.println("\u001B[0m");
             } else {
                 System.out.println("System is retrieving orders, please wait..");
             }
         } catch (IllegalArgumentException e) {
+            throw new OrderApplicationException(e, currency);
+        } catch (IndexOutOfBoundsException e) {
+            throw new OrderApplicationException(e, currency);
+        } catch (Exception e) {
             LOG.severe(e.getMessage());
-            publisher.publishEvent(new OrderBookOutOfSyncEvent(e.getMessage()));
-            throw new RuntimeException(e);
+            throw new OrderApplicationException(e, currency);
         }
 
     }
@@ -154,12 +159,11 @@ public class OrderBookServiceImpl implements OrderBookService, ApplicationEventP
             throw new RuntimeException(e);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
+        } catch (Exception e) {
+            LOG.severe(e.getMessage());
+            //throw new OrderApplicationException(e, currency);
         }
 
     }
 
-    @Override
-    public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
-        this.publisher = applicationEventPublisher;
-    }
 }

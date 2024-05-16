@@ -5,7 +5,7 @@ import com.google.gson.annotations.SerializedName;
 import java.io.Serializable;
 import java.util.List;
 
-public class Record implements Serializable {
+public class Record implements Serializable, Comparable<Record> {
 
     @SerializedName("e")
     private String event;
@@ -111,5 +111,10 @@ public class Record implements Serializable {
                 ", bids=" + bids +
                 ", asks=" + asks +
                 '}';
+    }
+
+    @Override
+    public int compareTo(Record o) {
+        return this.finalUpdateId.compareTo(o.getFinalUpdateId());
     }
 }

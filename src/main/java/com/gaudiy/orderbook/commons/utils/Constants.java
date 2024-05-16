@@ -1,4 +1,4 @@
-package com.gaudiy.orderbook.utils;
+package com.gaudiy.orderbook.commons.utils;
 
 public class Constants {
 

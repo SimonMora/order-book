@@ -1,10 +1,10 @@
 package com.gaudiy.orderbook.service.impl;
 
+import com.gaudiy.orderbook.commons.exception.OrderApplicationException;
 import com.gaudiy.orderbook.entity.Record;
 import com.gaudiy.orderbook.event.OrderBookUpdatedEvent;
-import com.gaudiy.orderbook.repository.BTCRecordsStorage;
 import com.gaudiy.orderbook.service.RecordService;
-import com.gaudiy.orderbook.utils.Utils;
+import com.gaudiy.orderbook.commons.utils.Utils;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import org.springframework.context.ApplicationEventPublisher;
@@ -24,19 +24,19 @@ public class RecordServiceImpl implements RecordService, ApplicationEventPublish
 
     private static final Logger LOG = Logger.getLogger("RecordServiceImpl.class");
 
-    private final BTCRecordsStorage storage = BTCRecordsStorage.getInstance();
     private ApplicationEventPublisher publisher;
 
     @Override
     public void manageNewRecordReceived(String object, String currency) {
         final Gson parser = new Gson();
         var storage = Utils.retrieveStorage(currency);
+
         try {
             final Record newRecord = parser.fromJson(object, Record.class);
             storage.storeReceivedRecord(newRecord);
         } catch (JsonSyntaxException e) {
-            System.out.println("Object received: " + object);
-            System.out.println(e.getMessage());
+            LOG.severe("Object received: " + object);
+            throw new OrderApplicationException(e, currency);
         }
     }
 
@@ -55,27 +55,31 @@ public class RecordServiceImpl implements RecordService, ApplicationEventPublish
                     .parallel()
                     .forEach(ask -> { this.evaluateAskProcessing(ask, currency); });
         } catch (ConcurrentModificationException e) {
-            throw new RuntimeException(e);
+            throw new OrderApplicationException(e, currency);
         }
     }
 
     @Override
     public void orderUpdate(Long lastUpdateId, String currency) {
-        final AtomicInteger counter = new AtomicInteger(0);
-        var records = Utils.retrieveStorage(currency).getRecordList();
+        try {
+            final AtomicInteger counter = new AtomicInteger(0);
+            var records = Utils.retrieveStorage(currency).getRecordList();
 
-        if (records.size() > 0) {
-            records.stream()
-                    .parallel()
-                    .forEach(record -> {
-                        parseRecordPrices(record, currency);
-                        counter.incrementAndGet();
-                        if(records.size() == counter.get()) {
-                            publisher.publishEvent(new OrderBookUpdatedEvent(lastUpdateId, currency));
-                        }
-                    });
-        } else {
-            System.out.println("No records to process..");
+            if (!records.isEmpty()) {
+                records.stream()
+                        .parallel()
+                        .forEach(record -> {
+                            parseRecordPrices(record, currency);
+                            counter.incrementAndGet();
+                            if(records.size() == counter.get()) {
+                                publisher.publishEvent(new OrderBookUpdatedEvent(lastUpdateId, currency));
+                            }
+                        });
+            } else {
+                System.out.println("No records to process..");
+            }
+        } catch (ConcurrentModificationException e) {
+            throw new OrderApplicationException(e, currency);
         }
     }
 
@@ -90,7 +94,7 @@ public class RecordServiceImpl implements RecordService, ApplicationEventPublish
             }
         } catch (IndexOutOfBoundsException e) {
             LOG.severe("Received unparseable price levels in the Record from binance ws");
-            throw e;
+            throw new OrderApplicationException(e, currency);
         }
     }
 
@@ -105,7 +109,7 @@ public class RecordServiceImpl implements RecordService, ApplicationEventPublish
             }
         } catch (IndexOutOfBoundsException e) {
             LOG.severe("Received unparseable price levels in the Record from binance ws");
-            throw e;
+            throw new OrderApplicationException(e, currency);
         }
     }
 

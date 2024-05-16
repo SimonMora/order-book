@@ -1,4 +1,4 @@
-package com.gaudiy.orderbook.utils;
+package com.gaudiy.orderbook.commons.utils;
 
 import com.gaudiy.orderbook.repository.BTCRecordsStorage;
 import com.gaudiy.orderbook.repository.ETHRecordsStorage;
@@ -12,7 +12,7 @@ public class Utils {
     }
 
     public static Storage retrieveStorage(String currency) {
-        return currency.equals( Constants.CURRENCY_BTC ) ? BTCRecordsStorage.getInstance() : ETHRecordsStorage.getInstance();
+        return currency.equals( Constants.CURRENCY_BTC ) ? BTCRecordsStorage.getInstance(currency) : ETHRecordsStorage.getInstance(currency);
     }
 
 }

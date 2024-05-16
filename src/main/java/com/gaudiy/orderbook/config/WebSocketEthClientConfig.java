@@ -1,7 +1,7 @@
 package com.gaudiy.orderbook.config;
 
-import com.gaudiy.orderbook.utils.Constants;
-import com.gaudiy.orderbook.utils.Utils;
+import com.gaudiy.orderbook.commons.utils.Constants;
+import com.gaudiy.orderbook.commons.utils.Utils;
 import org.java_websocket.client.WebSocketClient;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;

@@ -4,12 +4,12 @@ public final class BTCRecordsStorage extends Storage {
 
     private static BTCRecordsStorage INSTANCE;
 
-    private BTCRecordsStorage() {
-        super();
+    private BTCRecordsStorage(String currency) {
+        super(currency);
     }
-    public static BTCRecordsStorage getInstance() {
+    public static BTCRecordsStorage getInstance(String currency) {
         if (INSTANCE == null) {
-            INSTANCE = new BTCRecordsStorage();
+            INSTANCE = new BTCRecordsStorage(currency);
         }
         return INSTANCE;
     }

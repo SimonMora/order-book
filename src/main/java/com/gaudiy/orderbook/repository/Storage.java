@@ -1,30 +1,35 @@
 package com.gaudiy.orderbook.repository;
 
+import com.gaudiy.orderbook.commons.exception.OrderApplicationException;
+import com.gaudiy.orderbook.commons.exception.OrderPricesWrongFormat;
 import com.gaudiy.orderbook.entity.OrderBook;
 import com.gaudiy.orderbook.entity.Record;
 
-import java.math.BigDecimal;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public abstract class Storage {
 
-    private Set<Record> recordList;
+    private static final Logger LOG = Logger.getLogger("Storage.class");
+
+    private String currency;
+    private ConcurrentSkipListSet<Record> recordList;
     private Queue<OrderBook> orderBooks;
     private Map<String, String> bidsMap;
     private Map<String, String> asksMap;
 
 
-    protected Storage() {
+    protected Storage(String currency) {
+        this.currency = currency;
         bidsMap = new ConcurrentHashMap<>();
         asksMap = new ConcurrentHashMap<>();
-        recordList = new HashSet<>();
+        recordList = new ConcurrentSkipListSet<>();
         orderBooks = new ConcurrentLinkedQueue<>();
     }
 
@@ -36,22 +41,32 @@ public abstract class Storage {
             if (level > 0 && bidsMap.size() < 50) {
                 bidsMap.put(bid.get(0), bid.get(1));
             }
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
+        } catch (NumberFormatException e) {
+            LOG.severe(e.getMessage());
+            throw new OrderPricesWrongFormat(e.getMessage());
+        } catch (IndexOutOfBoundsException e) {
+            LOG.severe("List prices with wrong format causes: " + e.getMessage());
+            throw new OrderPricesWrongFormat(e.getMessage());
         }
     }
 
-    public String updateBid(String bidPrice, String bid) {
-        final BigDecimal price = BigDecimal.valueOf(Double.parseDouble(bidPrice));
-        final Double level = Double.parseDouble(bid);
+    public void updateBid(String bidPrice, String bid) {
+        try {
+            final double price = Double.parseDouble(bidPrice);
+            final double level = Double.parseDouble(bid);
 
-        if (level == 0) {
-            bidsMap.remove(bidPrice);
-        } else {
-            bidsMap.replace(bidPrice, bid);
+            if (level == 0) {
+                bidsMap.remove(bidPrice);
+            } else {
+                bidsMap.replace(bidPrice, bid);
+            }
+        } catch (NumberFormatException e) {
+            LOG.severe(e.getMessage());
+            throw new OrderPricesWrongFormat(e.getMessage());
+        } catch (IndexOutOfBoundsException e) {
+            LOG.severe("List prices with wrong format causes: " + e.getMessage());
+            throw new OrderPricesWrongFormat(e.getMessage());
         }
-
-        return bidPrice;
     }
 
     public boolean isBidStored(String bidPrice){
@@ -60,29 +75,38 @@ public abstract class Storage {
 
     public void addNewAsks(List<String> ask) {
         try {
-           final BigDecimal price = BigDecimal.valueOf(Double.parseDouble(ask.get(0)));
-           final Double level = Double.parseDouble(ask.get(1));
+           final double price = Double.parseDouble(ask.get(0));
+           final double level = Double.parseDouble(ask.get(1));
 
             if (level > 0 && asksMap.size() < 50) {
                 asksMap.put(ask.get(0), ask.get(1));
             }
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
+        } catch (NumberFormatException e) {
+            LOG.severe(e.getMessage());
+            throw new OrderPricesWrongFormat(e.getMessage());
+        } catch (IndexOutOfBoundsException e) {
+            LOG.severe("List prices with wrong format causes: " + e.getMessage());
+            throw new OrderPricesWrongFormat(e.getMessage());
         }
-
     }
 
-    public String updateAsk(String askPrice, String ask) {
-        final BigDecimal price = BigDecimal.valueOf(Double.valueOf(askPrice));
-        final Double level = Double.valueOf(ask);
+    public void updateAsk(String askPrice, String ask) {
+        try {
+            final double price = Double.valueOf(askPrice);
+            final double level = Double.valueOf(ask);
 
-        if (level == 0) {
-            asksMap.remove(askPrice);
-        } else {
-            asksMap.replace(askPrice, ask);
+            if (level == 0) {
+                asksMap.remove(askPrice);
+            } else {
+                asksMap.replace(askPrice, ask);
+            }
+        } catch (NumberFormatException e) {
+            LOG.severe(e.getMessage());
+            throw new OrderPricesWrongFormat(e.getMessage());
+        } catch (IndexOutOfBoundsException e) {
+            LOG.severe("List prices with wrong format causes: " + e.getMessage());
+            throw new OrderPricesWrongFormat(e.getMessage());
         }
-
-        return askPrice;
     }
 
     public boolean isAskStored(String askPrice){
@@ -92,7 +116,16 @@ public abstract class Storage {
 
     public void storeReceivedRecord(Record newRecord) {
         if (newRecord != null) {
-            recordList.add(newRecord);
+            if (!recordList.isEmpty()) {
+                var pastRecord = recordList.last();
+                if (pastRecord != null && pastRecord.getFinalUpdateId() + 1 == newRecord.getInitialUpdateId()) {
+                    recordList.add(newRecord);
+                } else {
+                    throw new OrderApplicationException(new IllegalArgumentException("De-synchronized exchanged and local order book"), currency);
+                }
+            } else {
+                recordList.add(newRecord);
+            }
         }
     }
 
@@ -100,7 +133,7 @@ public abstract class Storage {
         this.recordList = recordList
                 .stream()
                 .filter(record -> record.getFinalUpdateId() > lastUpdateId)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toCollection(() -> new ConcurrentSkipListSet<>()));
     }
 
     public String saveOrderBookAndResetPriceLevels(Long lastUpdateId) {
@@ -123,11 +156,11 @@ public abstract class Storage {
     public void restoreStorage() {
         bidsMap = new ConcurrentHashMap<>();
         asksMap = new ConcurrentHashMap<>();
-        recordList = new HashSet<>();
+        recordList = new ConcurrentSkipListSet<>();
         orderBooks = new ConcurrentLinkedQueue<>();
     }
 
-    public Set<Record> getRecordList() {
+    public ConcurrentSkipListSet<Record> getRecordList() {
         return recordList;
     }
 
