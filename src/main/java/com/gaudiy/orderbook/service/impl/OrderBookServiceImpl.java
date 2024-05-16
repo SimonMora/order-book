@@ -1,15 +1,17 @@
 package com.gaudiy.orderbook.service.impl;
 
-import com.gaudiy.orderbook.commons.exception.OrderApplicationException;
 import com.gaudiy.orderbook.commons.utils.Constants;
 import com.gaudiy.orderbook.entity.OrderBook;
 import com.gaudiy.orderbook.entity.Snapshot;
+import com.gaudiy.orderbook.event.OrderBookOutOfSyncEvent;
 import com.gaudiy.orderbook.service.OrderBookService;
 import com.gaudiy.orderbook.service.RecordService;
 import com.gaudiy.orderbook.commons.utils.Utils;
 import com.google.gson.Gson;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -23,9 +25,11 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 @Service
-public class OrderBookServiceImpl implements OrderBookService {
+public class OrderBookServiceImpl implements OrderBookService, ApplicationEventPublisherAware {
 
     private final Logger LOG = Logger.getLogger("OrderBookServiceImpl.class");
+
+    private ApplicationEventPublisher applicationEventPublisher;
 
     @Value("${binance.depth.snapshot.uri}")
     private String depthSnapshotUri;
@@ -51,7 +55,7 @@ public class OrderBookServiceImpl implements OrderBookService {
                 throw new IllegalArgumentException("There are two orders with the same lastUpdateId..");
             }
 
-            final OrderBook orderToProcess = orderBooksFiltered.size() != 0 ? orderBooksFiltered.get(0) : new OrderBook();
+            final OrderBook orderToProcess = !orderBooksFiltered.isEmpty() ? orderBooksFiltered.get(0) : new OrderBook();
             final var asks = orderToProcess.getAsks();
             final var bids = orderToProcess.getBids();
 
@@ -60,11 +64,11 @@ public class OrderBookServiceImpl implements OrderBookService {
                         .stream()
                         .filter(ob -> ob.getLastUpdateId().equals( orderToProcess.getInitialUpdateId() ))
                         .limit(2)
-                        .collect(Collectors.toList());
+                        .toList();
                 if (orderBooks.size() > 1 && orderBooksFiltered.size() > 1) {
                     throw new IllegalArgumentException("There are two orders with the same initialUpdateId..");
                 }
-                final OrderBook orderToCompare = orderBooksFiltered.size() != 0 ? orderBooksFiltered.get(0) : new OrderBook();
+                final OrderBook orderToCompare = !orderBooksFiltered.isEmpty() ? orderBooksFiltered.get(0) : new OrderBook();
 
                 List<String> bidsList = new ArrayList<>();
                 List<String> asksList = new ArrayList<>();
@@ -76,27 +80,25 @@ public class OrderBookServiceImpl implements OrderBookService {
                         .keySet()
                         .stream()
                         .sorted()
-                        .limit(50)
                         .map(key -> {
                             final StringBuilder sb = new StringBuilder("\u001B[32m");
                             sb.append(String.format("%-10.10s  %-10.10s", key, bids.get(key)));
                             sb.append("\u001B[0m");
                             return sb.toString();
                         })
-                        .collect(Collectors.toList())
+                        .toList()
                 );
                 asksList.addAll( asks
                         .keySet()
                         .stream()
                         .sorted()
-                        .limit(50)
                         .map(key -> {
                             final StringBuilder sb = new StringBuilder("\u001B[31m");
                             sb.append(String.format("%-10.10s  %-10.10s", key, asks.get(key)));
                             sb.append("\u001B[0m");
                             return sb.toString();
                         })
-                        .collect(Collectors.toList())
+                        .toList()
                 );
 
                 if (bidsList.size() > asksList.size()) {
@@ -126,13 +128,13 @@ public class OrderBookServiceImpl implements OrderBookService {
             } else {
                 System.out.println("System is retrieving orders, please wait..");
             }
-        } catch (IllegalArgumentException e) {
-            throw new OrderApplicationException(e, currency);
-        } catch (IndexOutOfBoundsException e) {
-            throw new OrderApplicationException(e, currency);
+        } catch (IllegalArgumentException | IndexOutOfBoundsException e) {
+            LOG.severe("Possible de-synchronization encountered, is required to clean up the storage and re-start the process.");
+            applicationEventPublisher.publishEvent(new OrderBookOutOfSyncEvent(e.getMessage(), currency));
         } catch (Exception e) {
-            LOG.severe(e.getMessage());
-            throw new OrderApplicationException(e, currency);
+            final String msg = String.format("Unexpected behavior encountered, please get in touch with an administrator." +
+                    " Probide the following message: %n%s", e.getMessage());
+            LOG.severe(msg);
         }
 
     }
@@ -155,15 +157,19 @@ public class OrderBookServiceImpl implements OrderBookService {
 
             recordService.orderUpdate(latestSnapshot.getLastUpdateId(), currency);
 
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        } catch (Exception e) {
+        } catch (IOException | InterruptedException e) {
             LOG.severe(e.getMessage());
-            //throw new OrderApplicationException(e, currency);
+            applicationEventPublisher.publishEvent(new OrderBookOutOfSyncEvent(e.getMessage(), currency));
+        } catch (Exception e) {
+            final String msg = String.format("Unexpected behavior encountered, please get in touch with an administrator." +
+                    " Probide the following message: %n%s", e.getMessage());
+            LOG.severe(msg);
         }
 
     }
 
+    @Override
+    public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
+        this.applicationEventPublisher = applicationEventPublisher;
+    }
 }

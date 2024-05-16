@@ -1,6 +1,5 @@
 package com.gaudiy.orderbook.config;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.gaudiy.orderbook.service.RecordService;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
@@ -22,8 +21,8 @@ public class OrderWebSocketClient extends WebSocketClient {
     }
 
     @Override
-    public void onOpen(ServerHandshake handshakedata) {
-        System.out.println("new connection opened");
+    public void onOpen(ServerHandshake handshakeData) {
+        System.out.printf("New connection opened for currency: %s%n", currency);
     }
 
     @Override
@@ -43,7 +42,9 @@ public class OrderWebSocketClient extends WebSocketClient {
 
     @Override
     public void onError(Exception ex) {
-        System.err.println("an error occurred:" + ex);
+        System.err.printf("An error occurred: %s for currency: %s%n", ex, currency);
+        close();
+        reconnect();
     }
 
 }

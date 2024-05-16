@@ -18,7 +18,7 @@ public abstract class Storage {
 
     private static final Logger LOG = Logger.getLogger("Storage.class");
 
-    private String currency;
+    private final String currency;
     private ConcurrentSkipListSet<Record> recordList;
     private Queue<OrderBook> orderBooks;
     private Map<String, String> bidsMap;
@@ -42,11 +42,11 @@ public abstract class Storage {
                 bidsMap.put(bid.get(0), bid.get(1));
             }
         } catch (NumberFormatException e) {
-            LOG.severe(e.getMessage());
-            throw new OrderPricesWrongFormat(e.getMessage());
-        } catch (IndexOutOfBoundsException e) {
             LOG.severe("List prices with wrong format causes: " + e.getMessage());
-            throw new OrderPricesWrongFormat(e.getMessage());
+            LOG.severe("Possible de-synchronization incoming, disconnection from WebSockets is expected.");
+            throw new OrderPricesWrongFormat(currency);
+        } catch (IndexOutOfBoundsException e) {
+            throw e;
         }
     }
 
@@ -62,10 +62,10 @@ public abstract class Storage {
             }
         } catch (NumberFormatException e) {
             LOG.severe(e.getMessage());
-            throw new OrderPricesWrongFormat(e.getMessage());
+            LOG.severe("Possible de-synchronization incoming, disconnection from WebSockets is expected.");
+            throw new OrderPricesWrongFormat(currency);
         } catch (IndexOutOfBoundsException e) {
-            LOG.severe("List prices with wrong format causes: " + e.getMessage());
-            throw new OrderPricesWrongFormat(e.getMessage());
+            throw e;
         }
     }
 
@@ -83,10 +83,10 @@ public abstract class Storage {
             }
         } catch (NumberFormatException e) {
             LOG.severe(e.getMessage());
-            throw new OrderPricesWrongFormat(e.getMessage());
+            LOG.severe("Possible de-synchronization incoming, disconnection from WebSockets is expected.");
+            throw new OrderPricesWrongFormat(currency);
         } catch (IndexOutOfBoundsException e) {
-            LOG.severe("List prices with wrong format causes: " + e.getMessage());
-            throw new OrderPricesWrongFormat(e.getMessage());
+            throw e;
         }
     }
 
@@ -102,10 +102,10 @@ public abstract class Storage {
             }
         } catch (NumberFormatException e) {
             LOG.severe(e.getMessage());
-            throw new OrderPricesWrongFormat(e.getMessage());
+            LOG.severe("Possible de-synchronization incoming, disconnection from WebSockets is expected.");
+            throw new OrderPricesWrongFormat(currency);
         } catch (IndexOutOfBoundsException e) {
-            LOG.severe("List prices with wrong format causes: " + e.getMessage());
-            throw new OrderPricesWrongFormat(e.getMessage());
+            throw e;
         }
     }
 
@@ -136,13 +136,13 @@ public abstract class Storage {
                 .collect(Collectors.toCollection(() -> new ConcurrentSkipListSet<>()));
     }
 
-    public String saveOrderBookAndResetPriceLevels(Long lastUpdateId) {
+    public void saveOrderBookAndResetPriceLevels(Long lastUpdateId) {
         orderBooks.add(
                 new OrderBook(
                         this.bidsMap,
                         this.asksMap,
                         lastUpdateId,
-                        orderBooks.size() > 0 ? orderBooks.peek().getLastUpdateId() : 0
+                        !orderBooks.isEmpty() ? orderBooks.peek().getLastUpdateId() : 0
                 )
         );
 
@@ -150,7 +150,6 @@ public abstract class Storage {
         asksMap = new ConcurrentHashMap<>();
 
         cleanRecordList(lastUpdateId);
-        return lastUpdateId.toString();
     }
 
     public void restoreStorage() {
