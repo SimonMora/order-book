@@ -45,8 +45,6 @@ public abstract class Storage {
             LOG.severe("List prices with wrong format causes: " + e.getMessage());
             LOG.severe("Possible de-synchronization incoming, disconnection from WebSockets is expected.");
             throw new OrderPricesWrongFormat(currency);
-        } catch (IndexOutOfBoundsException e) {
-            throw e;
         }
     }
 
@@ -64,8 +62,6 @@ public abstract class Storage {
             LOG.severe(e.getMessage());
             LOG.severe("Possible de-synchronization incoming, disconnection from WebSockets is expected.");
             throw new OrderPricesWrongFormat(currency);
-        } catch (IndexOutOfBoundsException e) {
-            throw e;
         }
     }
 
@@ -85,15 +81,13 @@ public abstract class Storage {
             LOG.severe(e.getMessage());
             LOG.severe("Possible de-synchronization incoming, disconnection from WebSockets is expected.");
             throw new OrderPricesWrongFormat(currency);
-        } catch (IndexOutOfBoundsException e) {
-            throw e;
         }
     }
 
     public void updateAsk(String askPrice, String ask) {
         try {
-            final double price = Double.valueOf(askPrice);
-            final double level = Double.valueOf(ask);
+            final double price = Double.parseDouble(askPrice);
+            final double level = Double.parseDouble(ask);
 
             if (level == 0) {
                 asksMap.remove(askPrice);
@@ -104,8 +98,6 @@ public abstract class Storage {
             LOG.severe(e.getMessage());
             LOG.severe("Possible de-synchronization incoming, disconnection from WebSockets is expected.");
             throw new OrderPricesWrongFormat(currency);
-        } catch (IndexOutOfBoundsException e) {
-            throw e;
         }
     }
 
